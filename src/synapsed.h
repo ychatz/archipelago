@@ -35,7 +35,7 @@
 #include <poll.h>
 
 #define DEFAULT_PORT 1134
-#define MAX_SOCKETS 3
+#define MAX_SOCKETS 300
 #define MAX_MESSAGE_LEN 100
 #define BACKLOG 10	 // how many pending connections queue will hold
 #define MAX_PORT_LEN 5
@@ -64,6 +64,7 @@ struct synapsed {
 struct cached_sockfd {
 	unsigned short port;
 	unsigned long s_addr;
+	struct sockaddr_in raddr_in;
 	int fd;
 	int status;
 };
@@ -73,6 +74,7 @@ struct original_request {
 	struct peer_req *pr;
 	struct xseg_request *req;
 	uint32_t sh_flags;
+	struct sockaddr_in raddr_in; // where the original request belongs
 };
 
 struct synapsed_header {

@@ -38,7 +38,7 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <xseg/xseg.h>
-#include <sys/util.h>
+#include <xseg/util.h>
 #include <signal.h>
 #include <limits.h>
 #include <errno.h>
@@ -110,6 +110,7 @@ int insert_sockfds(struct cached_sockfd *cfd,
 	for (i = 0; i < MAX_SOCKETS; i++) {
 		if (cfd[i].s_addr != 0)
 			continue;
+		memcpy(&cfd[i].raddr_in, sin, sizeof(struct sockaddr_in));
 		cfd[i].s_addr = sin->sin_addr.s_addr;
 		cfd[i].port = sin->sin_port;
 		cfd[i].fd = fd;
@@ -120,6 +121,17 @@ int insert_sockfds(struct cached_sockfd *cfd,
 	return SOCKFD_ENOSPC;
 }
 
+struct sockaddr_in * raddr_sockfds(struct cached_sockfd *cfd, int fd)
+{
+	int i;
+
+	for (i = 0; i < MAX_SOCKETS; i++) {
+		if (cfd[i].fd == fd) {
+			return &cfd[i].raddr_in;
+		}
+	}
+}
+
 int update_sockfds(struct cached_sockfd *cfd, int fd, int new_port)
 {
 	int i;
@@ -128,6 +140,7 @@ int update_sockfds(struct cached_sockfd *cfd, int fd, int new_port)
 		if (cfd[i].fd == fd) {
 			cfd[i].port = new_port;
 			cfd[i].status = SOCKFD_VERIFIED;
+			cfd[i].raddr_in.sin_port = new_port;
 			print_sockfd(&cfd[i]);
 			return 0;
 		}
@@ -152,13 +165,17 @@ int stat_sockfds(struct cached_sockfd *cfd, int fd)
 
 void pollfds_init(struct pollfd *fds)
 {
-	for (int i = 0; i < MAX_SOCKETS; i++)
+	int i;
+
+	for (i = 0; i < MAX_SOCKETS; i++)
 		fds[i].fd = -1;
 }
 
 int pollfds_add(struct pollfd *fds, int fd, short flags)
 {
-	for (int i = 0; i < MAX_SOCKETS; i++) {
+	int i;
+
+	for (i = 0; i < MAX_SOCKETS; i++) {
 		if (fds[i].fd < 0) {
 			fds[i].fd = fd;
 			fds[i].events = flags;
@@ -171,7 +188,9 @@ int pollfds_add(struct pollfd *fds, int fd, short flags)
 
 int pollfds_remove(struct pollfd *fds, int fd)
 {
-	for (int i = 0; i < MAX_SOCKETS; i++) {
+	int i;
+
+	for (i = 0; i < MAX_SOCKETS; i++) {
 		if (fds[i].fd == fd) {
 			fds[i].fd = -1;
 			fds[i].events = 0;

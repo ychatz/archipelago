@@ -42,7 +42,7 @@
 #include <xseg/xseg.h>
 #include <peer.h>
 #include <time.h>
-#include <sys/util.h>
+#include <xseg/util.h>
 #include <signal.h>
 #include <limits.h>
 #include <errno.h>
@@ -335,7 +335,9 @@ static int handle_receive(struct peerd *peer, struct peer_req *pr,
 	ssize_t bytes;
 
 	XSEGLOG2(&lc, D, "Started (pr: %p, req: %p)", pr, req);
-	fd = connect_to_remote(syn, &syn->raddr_in);
+	/* This is a reply xseg packet, so we'll send it back to the node that made
+	 * the original request */
+	fd = connect_to_remote(syn, &orig_req->raddr_in);
 	if (fd < 0)
 		return -1;
 
@@ -485,6 +487,8 @@ static int handle_recv(struct synapsed *syn, int fd)
 	pr_orig_req = (struct original_request *)pr->priv;
 	pr_orig_req->pr = orig_req->pr;
 	pr_orig_req->req = orig_req->req;
+	memcpy(&pr_orig_req->raddr_in, raddr_sockfds(syn->cfd, fd),
+			sizeof(struct sockaddr_in));
 
 	r = xseg_set_req_data(peer->xseg, req, pr);
 	if (r < 0) {
@@ -641,7 +645,7 @@ int synapsed_peerd_loop(void *arg)
 	uint64_t loops;
 	int r;
 
-	XSEGLOG2(&lc, I, "%s has tid %u.\n",id, pid);
+	XSEGLOG2(&lc, I, "%s has tid %u.\n", id, pid);
 
 	r = synapsed_init_local_signal(peer, &oldset);
 	if (r < 0) {

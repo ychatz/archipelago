@@ -69,5 +69,9 @@ set_target_properties(archip-mapperd
 	COMPILE_DEFINITIONS "ST_THREADS"
 	)
 
+set(SYNAPSED_SRC synapsed.c peer.c hash.c synapsed-utils.c)
+add_executable(archip-synapsed ${SYNAPSED_SRC})
+target_link_libraries(archip-synapsed xseg crypto)
+
 INSTALL_TARGETS(/bin archip-filed archip-radosd archip-vlmcd archip-mapperd
-	archip-bench archip-dummy archip-benchfd)
+	archip-bench archip-dummy archip-benchfd archip-synapsed)

@@ -56,7 +56,7 @@ from pwd import getpwnam
 random.seed()
 hostname = socket.gethostname()
 
-valid_role_types = ['file_blocker', 'rados_blocker', 'mapperd', 'vlmcd']
+valid_role_types = ['file_blocker', 'rados_blocker', 'mapperd', 'vlmcd', 'synapsed']
 valid_segment_types = ['posix']
 
 peers = dict()
@@ -81,6 +81,7 @@ FILE_BLOCKER = 'archip-filed'
 RADOS_BLOCKER = 'archip-radosd'
 MAPPER = 'archip-mapperd'
 VLMC = 'archip-vlmcd'
+SYNAPSE = 'archip-synapsed'
 
 def is_power2(x):
     return bool(x != 0 and (x & (x-1)) == 0)
@@ -407,6 +408,42 @@ class Vlmcd(Peer):
             self.cli_opts.append(str(self.mapper_port))
 
 
+class Synapsed(Peer):
+    def __init__(self, host_net_port=None, remote_net_port=None,
+                 remote_net_address=None, target_xseg_port=None, **kwargs):
+        self.executable = SYNAPSE
+        if remote_net_address is None:
+            raise Error("remote_net_address must be provided for %s" % self.role)
+        self.remote_net_address = remote_net_address
+
+        if target_xseg_port is None:
+            raise Error("target_xseg_port must be provided for %s" % self.role)
+        self.target_xseg_port = target_xseg_port
+
+        self.host_net_port = host_net_port
+        self.remote_net_port = remote_net_port
+
+        super(Synapsed, self).__init__(**kwargs)
+
+        if self.cli_opts is None:
+            self.cli_opts = []
+        self.set_synapsed_cli_options()
+
+    def set_synapsed_cli_options(self):
+        if self.host_net_port is not None:
+            self.cli_opts.append("-hp")
+            self.cli_opts.append(str(self.host_net_port))
+        if self.remote_net_port is not None:
+            self.cli_opts.append("-rp")
+            self.cli_opts.append(str(self.remote_net_port))
+        if self.remote_net_address is not None:
+            self.cli_opts.append("-ra")
+            self.cli_opts.append(str(self.remote_net_address))
+        if self.target_xseg_port is not None:
+            self.cli_opts.append("-txp")
+            self.cli_opts.append(str(self.target_xseg_port))
+
+
 config = {
     'CEPH_CONF_FILE': '/etc/ceph/ceph.conf',
     # 'SPEC': "posix:archipelago:1024:5120:12",
@@ -597,6 +634,9 @@ def check_conf():
         elif role_type == 'vlmcd':
             peers[role] = Vlmcd(role=role, spec=segment.get_spec(),
                                 **role_config)
+        elif role_type == 'synapsed':
+            peers[role] = Synapsed(role=role, spec=segment.get_spec(),
+                                **role_config)
         else:
             raise Error("No valid peer type: %s" % role_type)
         validatePortRange(peers[role].portno_start, peers[role].portno_end,
@@ -706,6 +746,11 @@ def createDict(cfg, section):
     elif t == 'vlmcd':
         sec_dic['blocker_port'] = cfg.getint(section, 'blocker_port')
         sec_dic['mapper_port'] = cfg.getint(section, 'mapper_port')
+    elif t == 'synapsed':
+        sec_dic['host_net_port'] = cfg.getint(section, 'host_net_port')
+        sec_dic['remote_net_port'] = cfg.getint(section, 'remote_net_port')
+        sec_dic['remote_net_address'] = cfg.get(section, 'remote_net_address')
+        sec_dic['target_xseg_port'] = cfg.getint(section, 'target_xseg_port')
 
     return sec_dic
 

@@ -86,6 +86,7 @@ struct synapsed_header {
 	uint64_t datalen;
 	uint64_t offset;
 	uint64_t serviced;
+	uint64_t size;
 };
 #pragma pack(pop)
 

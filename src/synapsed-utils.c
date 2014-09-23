@@ -258,6 +258,7 @@ void pack_request(struct synapsed_header *sh, struct peer_req *pr,
 	sh->datalen = req->datalen;
 	sh->targetlen = req->targetlen;
 	sh->serviced = req->serviced;
+	sh->size = req->size;
 
 	print_synapsed_header(sh);
 }
@@ -271,6 +272,7 @@ void unpack_request(struct synapsed_header *sh, struct xseg_request *req)
 	req->datalen = sh->datalen;
 	req->targetlen = sh->targetlen;
 	req->serviced = sh->serviced;
+	req->size = sh->size;
 
 	print_synapsed_header(sh);
 }

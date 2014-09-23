@@ -463,7 +463,6 @@ static int handle_recv(struct synapsed *syn, int fd)
 				sh.targetlen, sh.datalen);
 		goto put_xseg_request;
 	}
-	req->size = req->datalen;
 
 	XSEGLOG2(&lc, D, "Scattering data");
 	req_data = xseg_get_data(peer->xseg, req);
